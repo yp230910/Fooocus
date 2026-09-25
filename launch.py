@@ -2,10 +2,19 @@ import os
 import ssl
 import sys
 import platform
+
 import numpy as np
 
-if not hasattr(np, "bool8"):
-    np.bool8 = np.bool_
+# Restore NumPy 1.x aliases removed in NumPy 2.0 for Gradio 3.x compatibility
+for old_attr, new_attr in [
+    ("bool8", np.bool_),
+    ("float_", np.float64),
+    ("int_", np.int64),
+    ("uint", np.uint64),
+    ("complex_", np.complex128),
+]:
+    if not hasattr(np, old_attr):
+        setattr(np, old_attr, new_attr)
     
 print('[System ARGV] ' + str(sys.argv))
 
