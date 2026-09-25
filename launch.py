@@ -5,7 +5,10 @@ import platform
 
 import numpy as np
 
-# Restore NumPy 1.x aliases removed in NumPy 2.0 for Gradio 3.x compatibility
+# Restore NumPy 1.x methods removed in NumPy 2.0 for Gradio 3.x
+if not hasattr(np, "obj2sctype"):
+    np.obj2sctype = lambda obj: np.dtype(obj).type
+
 for old_attr, new_attr in [
     ("bool8", np.bool_),
     ("float_", np.float64),
