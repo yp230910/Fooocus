@@ -11,15 +11,13 @@ tqdm==4.67.1
 psutil==7.0.0
 pytorch_lightning==2.5.0.post0
 omegaconf==2.3.0
-gradio==3.41.2
+gradio==3.50.2
 pygit2==1.17.0
 opencv-contrib-python-headless==4.11.0.86
 httpx==0.28.1
 onnxruntime==1.20.1
 timm==1.0.14
-numpy>=2.1.0
 packaging==24.2
 rembg>=2.0.62
-git+https://github.com/IDEA-Research/GroundingDINO.git
 segment_anything==1.0
 supervision==0.18.0
