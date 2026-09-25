@@ -2,7 +2,11 @@ import os
 import ssl
 import sys
 import platform
+import numpy as np
 
+if not hasattr(np, "bool8"):
+    np.bool8 = np.bool_
+    
 print('[System ARGV] ' + str(sys.argv))
 
 root = os.path.dirname(os.path.abspath(__file__))
