@@ -1,6 +1,7 @@
 import os
 import ssl
 import sys
+import platform
 
 print('[System ARGV] ' + str(sys.argv))
 
@@ -15,10 +16,7 @@ if "GRADIO_SERVER_PORT" not in os.environ:
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-import platform
 import fooocus_version
-
-from build_launcher import build_launcher
 from modules.launch_util import is_installed, run, python, run_pip, requirements_met, delete_folder_content
 from modules.model_loader import load_file_from_url
 
@@ -27,9 +25,15 @@ TRY_INSTALL_XFORMERS = False
 
 
 def prepare_environment():
-    torch_index_url = os.environ.get('TORCH_INDEX_URL', "https://download.pytorch.org/whl/cu121")
-    torch_command = os.environ.get('TORCH_COMMAND',
-                                   f"pip install torch==2.1.0 torchvision==0.16.0 --extra-index-url {torch_index_url}")
+    torch_index_url = os.environ.get('TORCH_INDEX_URL', "https://download.pytorch.org/whl/cu124")
+    
+    # Modern Python-aware default torch versions
+    if sys.version_info >= (3, 13):
+        default_torch_cmd = f"pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url {torch_index_url}"
+    else:
+        default_torch_cmd = f"pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url {torch_index_url}"
+
+    torch_command = os.environ.get('TORCH_COMMAND', default_torch_cmd)
     requirements_file = os.environ.get('REQS_FILE', "requirements_versions.txt")
 
     print(f"Python {sys.version}")
@@ -40,21 +44,21 @@ def prepare_environment():
 
     if TRY_INSTALL_XFORMERS:
         if REINSTALL_ALL or not is_installed("xformers"):
-            xformers_package = os.environ.get('XFORMERS_PACKAGE', 'xformers==0.0.23')
+            xformers_package = os.environ.get('XFORMERS_PACKAGE', 'xformers==0.0.28')
             if platform.system() == "Windows":
                 if platform.python_version().startswith("3.10"):
                     run_pip(f"install -U -I --no-deps {xformers_package}", "xformers", live=True)
                 else:
                     print("Installation of xformers is not supported in this version of Python.")
-                    print(
-                        "You can also check this and build manually: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Xformers#building-xformers-on-windows-by-duckness")
-                    if not is_installed("xformers"):
-                        exit(0)
             elif platform.system() == "Linux":
                 run_pip(f"install -U -I --no-deps {xformers_package}", "xformers")
 
     if REINSTALL_ALL or not requirements_met(requirements_file):
         run_pip(f"install -r \"{requirements_file}\"", "requirements")
+
+    # Safety check for runtime dependencies required by GroundingDINO / inpaint
+    if not is_installed("supervision"):
+        run_pip("install supervision", "supervision")
 
     return
 
@@ -73,7 +77,12 @@ def ini_args():
 
 
 prepare_environment()
-build_launcher()
+
+# Only build windows launcher batch files on Windows systems
+if platform.system() == "Windows":
+    from build_launcher import build_launcher
+    build_launcher()
+
 args = ini_args()
 
 if args.gpu_device_id is not None:
@@ -88,7 +97,6 @@ from modules import config
 from modules.hash_cache import init_cache
 
 os.environ["U2NET_HOME"] = config.path_inpaint
-
 os.environ['GRADIO_TEMP_DIR'] = config.temp_path
 
 if config.temp_path_cleanup_on_launch:
